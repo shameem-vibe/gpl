@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// DEFAULT DENY. No client may read or write any object.
+// Phase 2 has no uploads. Image uploads (Phase 3) go through signed Cloudinary uploads validated on the server
+// (MIME, size, extension). If Firebase Storage is adopted later, add narrowly scoped, validated rules here.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChevronDown, LogOut, Menu, X } from "lucide-react";
+import { ChevronDown, KeyRound, LogOut, Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { requestPasswordReset, signOutAdmin } from "@/lib/auth/client";
 import { ROLE_LABELS } from "@/lib/constants/roles";
 import { ADMIN_NAV, type AdminNavItem } from "@/lib/constants/admin-nav";
 import type { Role } from "@/types/domain";
@@ -35,11 +36,29 @@ function NavList({ items, onNavigate }: { items: AdminNavItem[]; onNavigate?: ()
 
 export function AdminShell({
   allowedHrefs, user, children,
-}: { allowedHrefs: string[]; user: { email: string | null; role: Role; preview?: boolean }; children: React.ReactNode }) {
+}: { allowedHrefs: string[]; user: { email: string | null; displayName: string | null; role: Role; preview?: boolean }; children: React.ReactNode }) {
   // Only strings cross the server/client boundary; icons are resolved here. Hiding is cosmetic, APIs enforce access.
   const items = ADMIN_NAV.filter((i) => allowedHrefs.includes(i.href));
   const [drawer, setDrawer] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const label = user.displayName || user.email || "Account";
+
+  async function logout() {
+    setBusy(true);
+    await signOutAdmin();
+    router.replace("/admin/login");
+    router.refresh();
+  }
+  async function resetOwnPassword() {
+    if (!user.email || user.preview) return;
+    setBusy(true);
+    try { await requestPasswordReset(user.email); setNote("Password reset email sent."); }
+    catch (e) { setNote(e instanceof Error ? e.message : "Could not send the email."); }
+    setBusy(false);
+  }
   return (
     <div className="min-h-screen bg-navy-900 lg:grid lg:grid-cols-[16rem_1fr]">
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-chalk/10 bg-pitch-950 lg:flex">
@@ -71,20 +90,29 @@ export function AdminShell({
               className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-pitch-800"
             >
               <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-gold font-display text-pitch-950">
-                {(user.email ?? "?").charAt(0).toUpperCase()}
+                {label.charAt(0).toUpperCase()}
               </span>
               <span className="hidden text-left text-sm sm:block">
-                <span className="block max-w-40 truncate">{user.email}</span>
+                <span className="block max-w-40 truncate">{label}</span>
                 <span className="block text-xs text-chalk-mute">{ROLE_LABELS[user.role]}</span>
               </span>
               <ChevronDown className="h-4 w-4 text-chalk-mute" aria-hidden />
             </button>
             {menu ? (
               <div role="menu" className="absolute right-0 mt-2 w-56 rounded-md border border-chalk/15 bg-pitch-900 p-1">
-                <p className="px-3 py-2 text-xs text-chalk-mute">{user.preview ? "UI preview (not signed in)" : "Signed in"}</p>
-                <button role="menuitem" disabled className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-chalk-mute disabled:cursor-not-allowed">
-                  <LogOut className="h-4 w-4" aria-hidden />Sign out (Phase 2)
+                <div className="px-3 py-2">
+                  <p className="truncate text-sm">{user.email}</p>
+                  <p className="text-xs text-chalk-mute">{ROLE_LABELS[user.role]}{user.preview ? " · UI preview" : ""}</p>
+                </div>
+                <button role="menuitem" onClick={resetOwnPassword} disabled={busy || !!user.preview}
+                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-chalk-dim hover:bg-pitch-800 disabled:cursor-not-allowed disabled:opacity-50">
+                  <KeyRound className="h-4 w-4" aria-hidden />Email me a password reset
                 </button>
+                <button role="menuitem" onClick={logout} disabled={busy}
+                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-chalk-dim hover:bg-pitch-800 disabled:opacity-50">
+                  <LogOut className="h-4 w-4" aria-hidden />{user.preview ? "Back to login" : "Sign out"}
+                </button>
+                {note ? <p role="status" className="px-3 py-2 text-xs text-gold">{note}</p> : null}
               </div>
             ) : null}
           </div>

@@ -63,7 +63,8 @@ service cloud.firestore {
     match /settings/public { allow read: if true; allow write: if false; }
     // settings/private unlisted -> denied
 
-    // ---- Audit: super admin read only, written by the server ----
-    match /auditLogs/{id}  { allow read: if role() == 'superAdmin'; allow write: if false; }
+    // ---- Audit: super admin read only. Written exclusively by the server (Admin SDK, server timestamps).
+    // Clients, including super admins, can never create, edit or delete entries, so records cannot be forged.
+    match /auditLogs/{id}  { allow read: if role() == 'superAdmin'; allow create, update, delete: if false; }
   }
 }

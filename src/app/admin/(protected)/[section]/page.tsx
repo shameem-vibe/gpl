@@ -1,16 +1,15 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/shared/empty-state";
-import { can } from "@/domain/permissions";
 import { ADMIN_NAV } from "@/lib/constants/admin-nav";
-import { getCurrentAdmin } from "@/lib/auth/session";
+import { requirePagePermission } from "@/lib/auth/guard";
 
 export default async function AdminSectionPage({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
   const item = ADMIN_NAV.find((i) => i.slug === section && i.slug !== "");
   if (!item) notFound();
-  const user = await getCurrentAdmin();
-  if (!user) redirect("/admin/login");
-  if (!can(user.role, item.permission)) {
+  // Layouts do not re-run on client navigation, so each page verifies the session and permission itself.
+  const { allowed } = await requirePagePermission(item.permission);
+  if (!allowed) {
     return <EmptyState icon={item.icon} title="You do not have access to this section" description="Ask a Super Admin to change your role if you need it." />;
   }
   return (

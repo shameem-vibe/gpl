@@ -1,6 +1,7 @@
-/** Shared entity types. Mirrors docs/DATABASE.md. Dates are ISO strings at the app boundary. */
+/** Shared entity types. Mirrors docs/DATABASE_SCHEMA.md. Dates are ISO strings at the app boundary. */
 
-export type Role = "superAdmin" | "admin" | "scorer" | "editor" | "auctionManager";
+export const ROLES = ["superAdmin", "admin", "scorer", "editor", "auctionManager"] as const;
+export type Role = (typeof ROLES)[number];
 export type ContentStatus = "draft" | "published";
 export type SeasonStatus = "draft" | "registration" | "auction" | "live" | "completed";
 export type MatchStatus = "scheduled" | "live" | "innings_break" | "completed" | "abandoned";
@@ -85,4 +86,42 @@ export interface AuctionSummary {
   playersInPool: number;
   teams: number;
   purseBdt: number;
+}
+
+/** A staff account as shown in the admin UI. Dates are ISO strings. Never carries credentials. */
+export interface StaffAccount {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: Role;
+  active: boolean;
+  createdAt: string | null;
+  createdBy: string | null;
+  updatedAt: string | null;
+  lastLoginAt: string | null;
+}
+
+export type AuditAction =
+  | "auth.login"
+  | "auth.login_denied"
+  | "auth.logout"
+  | "user.create"
+  | "user.update"
+  | "user.role_change"
+  | "user.deactivate"
+  | "user.reactivate"
+  | "user.reset_link_issued";
+
+export interface AuditLogEntry {
+  id: string;
+  actorUid: string;
+  actorEmail: string | null;
+  actorRole: Role | null;
+  action: AuditAction;
+  targetType: "user" | "session";
+  targetId: string;
+  summary: string;
+  /** Small before/after map. Must never contain secrets, tokens, links or passwords. */
+  changes: Record<string, { from: string | null; to: string | null }> | null;
+  createdAt: string | null;
 }

@@ -6,12 +6,12 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/admin/login")) return NextResponse.next();
+  if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/forgot-password")) return NextResponse.next();
   const preview = process.env.NODE_ENV !== "production" && process.env.ADMIN_UI_PREVIEW === "true";
   if (!preview && !req.cookies.get("gpl_session")?.value) {
     const url = req.nextUrl.clone();
     url.pathname = "/admin/login";
-    url.search = "";
+    url.search = pathname === "/admin" ? "" : `?next=${encodeURIComponent(pathname)}`;
     return NextResponse.redirect(url);
   }
   const res = NextResponse.next();

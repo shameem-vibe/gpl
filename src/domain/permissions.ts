@@ -1,6 +1,6 @@
 import type { Role } from "@/types/domain";
 
-/** Single source of truth for RBAC. Server routes call can(); UI only uses it to hide controls. */
+/** Single source of truth for RBAC. Server code calls can(); the UI only uses it to hide controls. */
 export const PERMISSIONS = [
   "dashboard:view", "seasons:manage", "matches:manage", "scoring:write", "teams:manage",
   "players:manage", "registrations:review", "auction:manage", "auction:bid", "content:manage",
@@ -8,12 +8,17 @@ export const PERMISSIONS = [
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
-const ALL = [...PERMISSIONS] as Permission[];
-
+/**
+ * Every role lists its permissions explicitly (no "everything except"), so adding a new permission
+ * can never silently grant it to an existing role. Only superAdmin receives all permissions.
+ */
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
-  superAdmin: ALL,
-  admin: ALL.filter((p) => p !== "users:manage" && p !== "audit:read" && p !== "settings:manage"),
-  scorer: ["dashboard:view", "scoring:write"],
+  superAdmin: PERMISSIONS,
+  admin: [
+    "dashboard:view", "seasons:manage", "matches:manage", "teams:manage", "players:manage",
+    "registrations:review", "content:manage", "streams:manage", "sponsors:manage",
+  ],
+  scorer: ["dashboard:view", "matches:manage", "scoring:write"],
   editor: ["dashboard:view", "content:manage", "streams:manage", "sponsors:manage"],
   auctionManager: ["dashboard:view", "auction:manage", "auction:bid", "players:manage"],
 };

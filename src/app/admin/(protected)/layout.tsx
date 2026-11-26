@@ -13,7 +13,7 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
   if (!user) redirect("/admin/login");
   const allowedHrefs = ADMIN_NAV.filter((i) => can(user.role, i.permission)).map((i) => i.href);
   return (
-    <AdminShell allowedHrefs={allowedHrefs} user={{ email: user.email, role: user.role, preview: user.preview }}>
+    <AdminShell allowedHrefs={allowedHrefs} user={{ email: user.email, displayName: user.displayName, role: user.role, preview: user.preview }}>
       {children}
     </AdminShell>
   );

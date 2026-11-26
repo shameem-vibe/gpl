@@ -1,7 +1,7 @@
 import "server-only";
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
 /** Server-only Admin SDK. Credentials come from Vercel env vars and never reach the browser bundle. */
 export function isAdminConfigured(): boolean {
@@ -24,3 +24,6 @@ function getAdminApp(): App {
 }
 export const adminAuth = () => getAuth(getAdminApp());
 export const adminDb = () => getFirestore(getAdminApp());
+/** Trusted server clock. Use for every createdAt/updatedAt so clients can never forge timestamps. */
+export const serverTimestamp = () => FieldValue.serverTimestamp();
+export type ServerValue = ReturnType<typeof serverTimestamp>;

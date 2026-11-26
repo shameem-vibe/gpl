@@ -1,34 +1,58 @@
 "use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FieldError, Input, Label } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Input, Label } from "@/components/ui/input";
+import { authErrorMessage, signInAdmin } from "@/lib/auth/client";
+import { isFirebaseClientConfigured } from "@/lib/firebase/client";
+import { loginSchema } from "@/lib/validation/auth";
 
 /**
- * UI only. Phase 2 wires this to Firebase Auth (signInWithEmailAndPassword), then POSTs the ID token to
- * /api/auth/session to receive an httpOnly session cookie. No password is ever stored or checked here.
+ * Real sign-in: Firebase Auth (email + password) -> ID token -> /api/auth/session -> httpOnly cookie.
+ * No password is stored or checked here, and nothing is written to browser storage.
  */
-export function LoginForm() {
+export function LoginForm({ next }: { next: string }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const authReady = false; // flipped when the auth module ships
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (pending) return;
+    setError(null);
+    const parsed = loginSchema.safeParse({ email, password });
+    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Check your details.");
+    setPending(true);
+    try {
+      await signInAdmin(parsed.data.email, parsed.data.password);
+      router.replace(next);
+      router.refresh();
+    } catch (err) {
+      const isServerMessage = err instanceof Error && !("code" in err);
+      setError(isServerMessage ? err.message : authErrorMessage(err));
+      setPassword("");
+      setPending(false);
+    }
+  }
 
   return (
-    <form className="mt-6 space-y-4" onSubmit={(e) => e.preventDefault()} noValidate>
+    <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate aria-busy={pending}>
+      {!isFirebaseClientConfigured ? <Alert variant="error">Firebase is not configured. See docs/SETUP.md.</Alert> : null}
       <div>
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!authReady} />
+        <Input id="email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} disabled={pending} required />
       </div>
       <div>
         <Label htmlFor="password">Password</Label>
-        <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={!authReady} />
-        <FieldError />
+        <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={pending} required />
       </div>
-      <Button type="submit" className="w-full" disabled={!authReady}>Sign in</Button>
-      <p className="flex gap-2 rounded-md bg-gold/10 p-3 text-sm text-gold">
-        <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-        Sign-in is not connected yet. It arrives with the authentication module (Phase 2).
-      </p>
+      {error ? <Alert variant="error">{error}</Alert> : null}
+      <Button type="submit" className="w-full" disabled={pending || !isFirebaseClientConfigured}>{pending ? "Signing in…" : "Sign in"}</Button>
+      <p className="text-center text-sm"><Link href="/admin/forgot-password" className="text-gold underline-offset-4 hover:underline">Forgot your password?</Link></p>
     </form>
   );
 }
