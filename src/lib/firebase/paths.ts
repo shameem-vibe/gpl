@@ -1,0 +1,20 @@
+/** Central Firestore path builders. Repositories use these so collection names are never hardcoded twice. */
+export const paths = {
+  users: "users",
+  seasons: "seasons",
+  season: (sid: string) => `seasons/${sid}`,
+  matches: (sid: string) => `seasons/${sid}/matches`,
+  match: (sid: string, mid: string) => `seasons/${sid}/matches/${mid}`,
+  balls: (sid: string, mid: string) => `seasons/${sid}/matches/${mid}/balls`,
+  auctions: (sid: string) => `seasons/${sid}/auctions`,
+  lots: (sid: string, aid: string) => `seasons/${sid}/auctions/${aid}/lots`,
+  teams: "teams",
+  players: "players",
+  news: "news",
+  videos: "videos",
+  sponsors: "sponsors",
+  streams: "streams",
+  pages: "pages",
+  settings: "settings",
+  auditLogs: "auditLogs",
+} as const;

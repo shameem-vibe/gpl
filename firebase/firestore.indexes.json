@@ -1,0 +1,9 @@
+{
+  "indexes": [
+    { "collectionGroup": "matches", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "startsAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "news", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "publishedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "videos", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "publishedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "balls", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "innings", "order": "ASCENDING" }, { "fieldPath": "seq", "order": "DESCENDING" }] }
+  ],
+  "fieldOverrides": []
+}

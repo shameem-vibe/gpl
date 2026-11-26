@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { color-scheme: dark; scroll-behavior: smooth; }
+  body { @apply bg-pitch-900 font-sans text-chalk antialiased; }
+  h1, h2, h3, .font-display { @apply font-display tracking-tight; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-gold; outline-style: solid; }
+  ::selection { @apply bg-gold text-pitch-950; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+}
+
+@layer components {
+  /* mown-stripe texture, used sparingly on hero and footer */
+  .stripes {
+    background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / .025) 0 56px, transparent 56px 112px);
+  }
+  .scoreboard-digit {
+    @apply rounded-sm bg-pitch-950 px-2 py-1 font-display tabular-nums text-gold ring-1 ring-gold/30;
+  }
+}

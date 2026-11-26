@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// GPL Firestore rules. DEFAULT DENY: any path not listed below is unreadable and unwritable.
+// ALL writes are denied to clients. Every mutation goes through server routes using the Admin SDK
+// (which bypasses rules), where role checks, Zod validation and transactions are enforced.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function role() { return signedIn() ? request.auth.token.get('role', null) : null; }
+    function isStaff() { return role() in ['superAdmin', 'admin', 'scorer', 'editor', 'auctionManager']; }
+    function isPublished() { return resource.data.status == 'published'; }
+
+    // ---- Identity ----
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;   // own profile only
+      allow write: if false;                                   // role/active are server-managed
+    }
+
+    // ---- Public reference data ----
+    match /seasons/{sid} {
+      allow read: if true;
+      allow write: if false;
+
+      match /matches/{mid} {
+        allow read: if true;   // includes liveState: the only document the Live page listens to
+        allow write: if false;
+        match /balls/{ballId} { allow read: if true; allow write: if false; }
+        // matches/{mid}/private/* is intentionally unlisted -> denied (scorer working state, idempotency keys)
+      }
+
+      match /squads/{tid} { allow read: if true; allow write: if false; }
+
+      match /auctions/{aid} {
+        allow read: if true;
+        allow write: if false;
+        match /lots/{lotId} {
+          allow read: if true;
+          allow write: if false;
+          match /bids/{bidId} { allow read: if true; allow write: if false; }
+        }
+        match /purses/{teamId} { allow read: if true; allow write: if false; }
+      }
+
+      // Contains phone numbers and other personal data: never readable by clients.
+      match /registrations/{rid} { allow read, write: if false; }
+    }
+
+    match /teams/{tid}     { allow read: if true; allow write: if false; }
+
+    // Public player doc holds ONLY safe fields (name, role, photo, stats). Personal data lives in
+    // players/{pid}/private/profile, which is unlisted -> denied.
+    match /players/{pid}   { allow read: if true; allow write: if false; }
+
+    // ---- Content: drafts are staff-only, published is public ----
+    match /news/{id}       { allow read: if isPublished() || isStaff(); allow write: if false; }
+    match /videos/{id}     { allow read: if isPublished() || isStaff(); allow write: if false; }
+    match /pages/{id}      { allow read: if isPublished() || isStaff(); allow write: if false; }
+    match /sponsors/{id}   { allow read: if true; allow write: if false; }
+    match /streams/{id}    { allow read: if true; allow write: if false; }
+
+    // ---- Settings: public/private split so private config cannot leak ----
+    match /settings/public { allow read: if true; allow write: if false; }
+    // settings/private unlisted -> denied
+
+    // ---- Audit: super admin read only, written by the server ----
+    match /auditLogs/{id}  { allow read: if role() == 'superAdmin'; allow write: if false; }
+  }
+}
