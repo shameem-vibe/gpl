@@ -5,7 +5,7 @@
 @layer base {
   html { color-scheme: dark; scroll-behavior: smooth; }
   body { @apply bg-pitch-900 font-sans text-chalk antialiased; }
-  h1, h2, h3, .font-display { @apply font-display tracking-tight; }
+  h1, h2, h3 { font-family: var(--font-display), Impact, sans-serif; letter-spacing: -0.025em; }
   :focus-visible { @apply outline-2 outline-offset-2 outline-gold; outline-style: solid; }
   ::selection { @apply bg-gold text-pitch-950; }
   @media (prefers-reduced-motion: reduce) {
